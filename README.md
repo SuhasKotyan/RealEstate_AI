@@ -23,7 +23,7 @@ This is a **single-salesperson prototype**, with no login, admin/manager account
 
 ## Current delivery status
 
-The complete source, runnable app, production build, automated tests, deployment instructions, code walkthrough, interview preparation and demo script are included. **Real Gemini analysis and chat have been verified locally**, including a full browser workflow with persistence, a call-note-grounded reply and follow-up completion. A live URL, public GitHub repository and recorded demo remain pending your publishing. Do not submit before completing [the submission checklist](docs/SUBMISSION.md).
+The app is published at **[GitHub Pages](https://suhaskotyan.github.io/RealEstate_AI/)**, with its source in the **[public GitHub repository](https://github.com/SuhasKotyan/RealEstate_AI)**. Real analysis and chat, persistence after reload, a call-note-grounded reply and follow-up completion have passed a full browser check on the public Pages URL. The frontend uses a private-key Vercel API because Pages is static hosting. Your recorded demo remains pending. See [the submission checklist](docs/SUBMISSION.md).
 
 Start with [SETUP_AND_DEPLOY.md](docs/SETUP_AND_DEPLOY.md). For your video and interview, read [CODE_WALKTHROUGH.md](docs/CODE_WALKTHROUGH.md), [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) and [INTERVIEW_PREP.md](docs/INTERVIEW_PREP.md).
 

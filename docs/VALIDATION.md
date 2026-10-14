@@ -6,7 +6,7 @@ Implementation verification: **14 October 2026**. This document distinguishes co
 
 | Check                           | Result                                                                  | What it establishes                                                                            |
 | ------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Unit / server tests             | 23 passing                                                              | Schemas, score boundaries, ordering, evidence, backups, transport and API errors               |
+| Unit / server tests             | 32 passing                                                              | Schemas, score boundaries, ordering, evidence, backups, transport and API errors               |
 | Browser workflows               | 7 passing                                                               | Intake, persistence, filters, follow-ups, scoped chat, backups, recovery and local API routing |
 | Production build                | Passing                                                                 | Browser app compiles and deployable assets are produced                                        |
 | npm dependency audit at install | 0 reported vulnerabilities                                              | Snapshot of the installed dependency audit, not a future guarantee                             |
@@ -18,7 +18,7 @@ Implementation verification: **14 October 2026**. This document distinguishes co
 
 **Data and rules (8 tests):** sample validity and labels, total/priority boundaries, out-of-range score rejection, intake limits/types, fabricated evidence, stable open-first sorting, due/completed/closed behavior, invalid/duplicate/oversized backups.
 
-**Provider transport (5 tests):** actual request shape, server header, model validation and missing key, actionable provider status handling, blocked/truncated/invalid output, timeout/network distinction. A mocked `fetch` is injected; no real key is used.
+**Provider transport (7 tests):** actual request shape, server header, model validation and missing key, actionable provider status handling, blocked/truncated/invalid output, timeout/network distinction. A mocked `fetch` is injected; no real key is used.
 
 **Endpoints (7 tests):** valid metadata/no-store response, request guards, 503 without canned output, fabricated evidence rejection, selected-lead context and role bounds, best-effort request limit, safe configuration health.
 
@@ -77,7 +77,19 @@ The broader evaluation matrix below is still incomplete. A successful local work
 
 If the provider rejects the schema or model, check its current structured-output documentation, adjust `GEMINI_MODEL` if necessary, and retry. Do not replace the requirement with a hardcoded response.
 
-## Screenshots
+## Deployed endpoint checks — 14 October 2026
+
+The newer Vercel deployment reports `configured: true` and `gemini-3.1-flash-lite`. Its analysis and chat endpoints initially returned `PROVIDER_ERROR`, then both succeeded with **HTTP 200** when retried on that same deployment. Chat passed schema/exact-source validation with five sources. This verifies deployed key/model configuration and successful real API operations, while also revealing intermittent provider errors.
+
+Local source now includes one bounded retry for temporary 500/502/503/504 responses and safe provider diagnostics. **25 unit/server tests and the production build pass**. This resilience update is now published in the backend connected to GitHub Pages. The exact Google failure status in the earlier deployment could not be recovered from its generic response; the new diagnostics make future failures observable. See `VERCEL_TROUBLESHOOTING.md`.
+
+## GitHub Pages acceptance — 14 October 2026
+
+GitHub Actions published the frontend at `https://suhaskotyan.github.io/RealEstate_AI/`, connected to a verified Vercel API with explicit Pages-origin CORS. The original `/src/main.jsx` 404 is fixed by deploying the Vite build with the repository base path. All referenced HTML/CSS/JS/favicon resources returned 200.
+
+The full real-AI browser test on that public URL passed with `gemini-3.1-flash-lite`: analysis 200, chat 200, persistence after reload, call-note-grounded rewritten reply, completed follow-up and zero page errors. A public bundle scan found the configured backend URL and no Google API key. **32 unit/API tests** also passed both locally and in GitHub Actions, including external API URL resolution and CORS/preflight tests.
+
+## Screenshot artifacts
 
 Actual local interface, using labeled samples and an unconfigured Gemini connection:
 

@@ -240,9 +240,11 @@ Server environment controls the key and model. The endpoint is fixed to Google's
 
 Timeouts are layered: provider fetch 45 seconds, browser request 55 seconds, Vercel function 60 seconds. This leaves time to return an actionable error before the platform terminates the function.
 
-Structured output asks the model for the shape; Zod independently verifies it. There is no automatic retry, to avoid multiplying requests against a limited free-tier quota. A user can retry explicitly.
+Structured output asks the model for the shape; Zod independently verifies it. Temporary HTTP 500/502/503/504 provider failures get one automatic retry after 800ms, sharing the same total 45-second timeout. Authentication, quota, model-not-found and invalid-output failures are not automatically retried. At most two model requests are made for an action; the salesperson can retry explicitly if both fail.
 
 Error categories include missing configuration (503), provider quota (429), app limit (429), provider/model/access errors (502), timeout (504), invalid output (502) and mismatched evidence (502). Raw provider response bodies and internal exceptions are never returned to the user.
+
+Provider failures additionally carry safe diagnostic metadata (`providerHttpStatus`, configured model, allowlisted Google status and recognized reason) in `error.details` and server logs. Raw messages, credentials, request headers and customer text are not logged or returned. This helps distinguish temporary provider errors from key restrictions or model access when localhost and Vercel behave differently.
 
 Health reports **key presence**, configured model and browser-local storage. It does not make an AI call or claim the credentials are valid. The UI says “Gemini configured,” not “Gemini connected successfully.”
 
@@ -285,6 +287,16 @@ Fonts are self-hosted in the browser bundle. No external image service, Google F
 The app can run entirely on free-tier eligible services for this prototype, but the actual account quota and hosting-plan conditions must be checked during publication. Do not enable paid billing for the assignment. Pinning the dependency lockfile makes installation repeatable.
 
 ## 15. What to show in the interview
+
+### GitHub Pages hosting update
+
+The live frontend can also run at `https://suhaskotyan.github.io/RealEstate_AI/`. Pages cannot run Node functions, so the frontend uses a public API origin configured by the build, while the key and model calls remain on Vercel. GitHub repository secrets are not exposed to the browser and do not create a backend.
+
+`src/lib/config.mjs` validates the public API origin and produces URLs for health, analysis and chat. Empty configuration retains local/Vercel same-origin requests. `server/cors.mjs` accepts the explicitly authorized Pages origin, handles JSON preflight before validation/AI calls, and rejects other foreign origins. Environment overrides can change this list; CORS is not authentication.
+
+`vite.config.js` reads the build's `VITE_BASE_PATH`, and the HTML favicon uses `%BASE_URL%`. `.github/workflows/pages.yml` obtains the repository base path from Pages configuration, tests/builds on Node 22 and publishes only `dist`. This fixes the previous 404 caused by publishing development HTML with `/src/main.jsx` directly.
+
+Set `VERIFY_APP_URL` to the public Pages URL to run `scripts/verify-live-workflow.mjs` against the real hosted UI. The test uses a fresh browser context and fictional intake. See `GITHUB_PAGES.md` for full deployment details.
 
 Use one source trace: **LeadForm → saveLead → requestAI → analyzeHandler → generateStructured → analysisSchema/verifyEvidence → updated state → ranked queue**.
 

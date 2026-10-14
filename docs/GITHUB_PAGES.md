@@ -43,3 +43,15 @@ If a deployment-specific API URL is used, future backend upgrades require updati
 - `tests/api-config.test.mjs` and `tests/cors.test.mjs`: routing, URL safety, CORS and preflight coverage.
 
 Browser-local records are origin-specific. The Pages workspace starts separately from the Vercel/local workspace; export/import a backup to transfer your fictional demo records if needed.
+
+## Verified publication — 14 October 2026
+
+- Public frontend: **https://suhaskotyan.github.io/RealEstate_AI/**
+- Public repository: **https://github.com/SuhasKotyan/RealEstate_AI**
+- Configured API origin: `https://real-estate-cmju05ve1-suhaskotyans7-6052.vercel.app`
+- GitHub Pages source: GitHub Actions; workflow build/deploy succeeded.
+- Published HTML, favicon, JavaScript and CSS returned 200 with correct repository-prefixed paths. The public JavaScript bundle contained the intended API URL and no detected Google API key.
+- Full real-browser workflow passed: analysis 200, chat 200, lead persisted after reload, chat grounded in a call note, reply draft generated, follow-up completed, and no page runtime errors.
+- The local repository's `main` now tracks `origin/main` for this GitHub repository. The active CLI account is SuhasKotyan.
+
+The API deployment URL is version-specific. Keep it available for this demo; update the public `API_BASE_URL` variable and rerun the Pages workflow when you need a newer backend version.

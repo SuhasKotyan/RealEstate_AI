@@ -13,7 +13,7 @@ try {
   page.setDefaultTimeout(60000);
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('http://127.0.0.1:5173');
+  await page.goto(process.env.VERIFY_APP_URL || 'http://127.0.0.1:5173');
   await page.getByRole('button', { name: 'Add a lead', exact: true }).click();
   await page.getByRole('button', { name: 'Fill an example lead' }).click();
   const analysisResponse = page.waitForResponse(
