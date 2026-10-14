@@ -23,6 +23,7 @@ const call = (fetchImpl) =>
     input: { intake: lead.intake },
     schema: analysisSchema,
     fetchImpl,
+    retryDelayMs: 0,
   });
 test('real Gemini transport contract uses server header, structured schema, timeout and lead context', async () => {
   const result = await call(async (url, options) => {
@@ -79,6 +80,88 @@ test('provider quotas, access errors and missing models return safe actionable e
     );
   }
 });
+test('transient provider failures retry once with the same timeout; quota and model errors do not retry', async () => {
+  let calls = 0;
+  let originalSignal;
+  const result = await call(async (url, options) => {
+    calls++;
+    if (calls === 1) {
+      originalSignal = options.signal;
+      return Response.json({ error: { status: 'UNAVAILABLE' } }, { status: 503 });
+    }
+    assert.equal(options.signal, originalSignal);
+    const { evidence, ...analysis } = lead.analysis;
+    const catalog = JSON.parse(JSON.parse(options.body).contents[0].parts[0].text).evidenceCatalog;
+    return Response.json(
+      candidate({
+        ...analysis,
+        evidenceIds: evidence.map(
+          (source) =>
+            catalog.find((item) => item.field === source.field && item.quote === source.quote).id,
+        ),
+      }),
+    );
+  });
+  assert.equal(calls, 2);
+  assert.deepEqual(result.result, lead.analysis);
+  for (const status of [429, 404, 403, 503]) {
+    let attempts = 0;
+    await assert.rejects(
+      call(async () => {
+        attempts++;
+        return new Response('no details', { status });
+      }),
+    );
+    assert.equal(attempts, status === 503 ? 2 : 1);
+  }
+});
+
+test('provider diagnostics expose safe status/reason without secrets or customer text', async () => {
+  const originalWarn = console.warn;
+  const logs = [];
+  console.warn = (...values) => logs.push(values);
+  try {
+    await assert.rejects(
+      call(async () =>
+        Response.json(
+          {
+            error: {
+              status: 'PERMISSION_DENIED',
+              message: 'secret provider body test-key-not-real customer transcript',
+              details: [{ reason: 'API_KEY_IP_ADDRESS_BLOCKED', metadata: { key: 'secret' } }],
+            },
+          },
+          { status: 403 },
+        ),
+      ),
+      (error) => {
+        assert.deepEqual(error.details, {
+          providerHttpStatus: 403,
+          model: 'gemini-2.5-flash',
+          providerStatus: 'PERMISSION_DENIED',
+          reason: 'API_KEY_IP_ADDRESS_BLOCKED',
+        });
+        assert.equal(JSON.stringify(error).includes('secret'), false);
+        return true;
+      },
+    );
+    await assert.rejects(
+      call(async () =>
+        Response.json(
+          { error: { status: 'UNAVAILABLE', message: 'Model is overloaded.' } },
+          { status: 503 },
+        ),
+      ),
+      (error) =>
+        error.details.providerHttpStatus === 503 && error.details.reason === 'PROVIDER_BUSY',
+    );
+    assert.equal(JSON.stringify(logs).includes('secret'), false);
+    assert.equal(JSON.stringify(logs).includes('customer transcript'), false);
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
 test('blocked, truncated, malformed and schema-invalid outputs never become saved analysis', async () => {
   for (const data of [
     candidate(lead.analysis, 'MAX_TOKENS'),

@@ -28,6 +28,7 @@ import FollowupModal from './components/FollowupModal.jsx';
 import Modal from './components/Modal.jsx';
 import { createSampleLeads } from './data/samples.js';
 import { requestAI } from './lib/api.js';
+import { apiUrl } from './lib/config.mjs';
 import { readLeads, writeLeads, exportLeads, downloadFile, STORAGE_KEY } from './lib/storage.js';
 import { makeDraft, makeActivity, formatDate } from './lib/format.js';
 import { backupSchema, getPriority, isDue, isOpen, sortLeads } from '../shared/contracts.mjs';
@@ -65,7 +66,7 @@ export default function App() {
   const checkHealth = useCallback(async () => {
     setApiState((prev) => ({ ...prev, status: 'checking' }));
     try {
-      const response = await fetch('/api/health', { signal: AbortSignal.timeout(8000) });
+      const response = await fetch(apiUrl('health'), { signal: AbortSignal.timeout(8000) });
       if (!response.ok) throw new Error();
       const data = await response.json();
       setApiState({

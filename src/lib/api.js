@@ -1,9 +1,10 @@
 import { analysisSchema, chatOutputSchema, verifyEvidence } from '../../shared/contracts.mjs';
+import { apiUrl } from './config.mjs';
 
 export async function requestAI(path, body, signal) {
   let response;
   try {
-    response = await fetch(`/api/${path}`, {
+    response = await fetch(apiUrl(path), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

@@ -7,6 +7,7 @@ import {
 } from '../shared/contracts.mjs';
 import { generateStructured, ApiError, modelName } from './ai.mjs';
 import { ANALYSIS_SYSTEM, CHAT_SYSTEM } from './prompts.mjs';
+import { applyCors } from './cors.mjs';
 
 const counters = new Map();
 function consumeLimit(req) {
@@ -45,17 +46,6 @@ function guard(req, res) {
   }
   if (!String(req.headers['content-type'] || '').includes('application/json'))
     throw new ApiError(415, 'CONTENT_TYPE', 'Send JSON in the request body.');
-  const origin = req.headers.origin;
-  const host = req.headers.host;
-  if (origin) {
-    let matches = false;
-    try {
-      matches = !!host && new URL(origin).host === host;
-    } catch {
-      /* Invalid origins are rejected. */
-    }
-    if (!matches) throw new ApiError(403, 'ORIGIN', 'Requests must come from this application.');
-  }
   if (Buffer.byteLength(JSON.stringify(req.body ?? {}), 'utf8') > 64000)
     throw new ApiError(
       413,
@@ -66,6 +56,7 @@ function guard(req, res) {
 export function createHandler(kind, generate = generateStructured) {
   return async (req, res) => {
     try {
+      if (!applyCors(req, res)) return;
       guard(req, res);
       const parsed = (kind === 'analysis' ? analyzeRequestSchema : chatRequestSchema).safeParse(
         req.body,
@@ -104,6 +95,7 @@ export function createHandler(kind, generate = generateStructured) {
         error: {
           code: known ? error.code : 'INTERNAL',
           message: known ? error.message : 'Something went wrong. Please try again.',
+          ...(known && error.details ? { details: error.details } : {}),
         },
       });
     }
@@ -112,12 +104,25 @@ export function createHandler(kind, generate = generateStructured) {
 export const analyzeHandler = createHandler('analysis');
 export const chatHandler = createHandler('chat');
 export function healthHandler(req, res) {
-  res.setHeader('Cache-Control', 'no-store');
-  if (req.method !== 'GET')
-    return res.status(405).json({ error: { code: 'METHOD', message: 'Use GET.' } });
-  res.status(200).json({
-    configured: !!process.env.GEMINI_API_KEY?.trim(),
-    model: modelName(),
-    storage: 'browser-local',
-  });
+  try {
+    if (!applyCors(req, res)) return;
+    if (req.method !== 'GET')
+      return res.status(405).json({ error: { code: 'METHOD', message: 'Use GET.' } });
+    res
+      .status(200)
+      .json({
+        configured: !!process.env.GEMINI_API_KEY?.trim(),
+        model: modelName(),
+        storage: 'browser-local',
+      });
+  } catch (error) {
+    res
+      .status(error instanceof ApiError ? error.status : 500)
+      .json({
+        error: {
+          code: error.code || 'INTERNAL',
+          message: error instanceof ApiError ? error.message : 'Health check failed.',
+        },
+      });
+  }
 }
