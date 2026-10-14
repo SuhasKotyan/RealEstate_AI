@@ -151,3 +151,9 @@ OpenAI **Codex** was used for product scoping, the React/Vite scaffold, UI imple
 - [Interview questions and answers](docs/INTERVIEW_PREP.md)
 - [Test evidence and real-model acceptance plan](docs/VALIDATION.md)
 - [Submission checklist and AI disclosure](docs/SUBMISSION.md)
+
+## GitHub Pages deployment
+
+Frontend: https://suhaskotyan.github.io/RealEstate_AI/
+
+GitHub Pages serves the Vite production build. AI analysis and chat use the Vercel backend configured in the public `API_BASE_URL` repository variable; the Gemini key stays on that server. Pushes to `main` run the Pages workflow automatically. See [GITHUB_PAGES.md](docs/GITHUB_PAGES.md) for the build, base-path, CORS and backend update details.
